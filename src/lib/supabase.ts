@@ -15,23 +15,19 @@ export async function getAddressBySeo(
   voie: string,
   numero: string
 ) {
-  // Reconstruit le slug à partir des segments URL
-  // URL: /33520/bruges/rue-du-colonel-rozanoff/15
-  // On cherche par cp + commune + numero + voie (ILIKE)
+  // Utilise la fonction RPC Postgres qui gère unaccent() + normalisation tirets
   const voieDecoded = voie.replace(/-/g, " ");
+  const communeDecoded = commune.replace(/-/g, " ");
 
-  const { data, error } = await supabase
-    .from("seo_page_data")
-    .select("*")
-    .eq("code_postal", cp)
-    .ilike("nom_commune", commune.replace(/-/g, " "))
-    .eq("numero", numero)
-    .ilike("nom_voie", `%${voieDecoded}%`)
-    .limit(1)
-    .single();
+  const { data, error } = await supabase.rpc("get_address_by_seo", {
+    p_cp: cp,
+    p_commune: communeDecoded,
+    p_voie: voieDecoded,
+    p_numero: numero,
+  });
 
-  if (error) return null;
-  return data;
+  if (error || !data || data.length === 0) return null;
+  return data[0];
 }
 
 export async function getVillePage(cp: string, commune: string) {
