@@ -10,8 +10,8 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: [
-      "https://intentanalytics.fr/sitemap.xml",
-      "https://intentanalytics.fr/sitemap-communes.xml",
+      "https://app.intentanalytics.fr/sitemap.xml",
+      "https://app.intentanalytics.fr/sitemap-communes.xml",
     ],
   };
 }

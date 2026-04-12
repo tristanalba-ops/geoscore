@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 
 // Static pages sitemap
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://intentanalytics.fr";
+  const base = "https://app.intentanalytics.fr";
   const now = new Date().toISOString();
 
   return [

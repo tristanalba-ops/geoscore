@@ -33,7 +33,7 @@ export async function GET() {
     });
   }
 
-  const base = "https://intentanalytics.fr";
+  const base = "https://app.intentanalytics.fr";
   const now = new Date().toISOString().split("T")[0];
 
   const urls = (data as any[]).map((row: any) => {
