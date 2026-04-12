@@ -6,6 +6,7 @@ import {
 } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { MapEmbed } from "@/components/MapEmbed";
+import { fetchLocalNews } from "@/lib/news";
 
 interface Props {
   params: { cp: string; ville: string };
@@ -60,9 +61,10 @@ export default async function CommunePage({ params }: Props) {
   const villeName = stats.nom_commune;
   const codeDept = stats.code_departement;
 
-  const autresCommunes = codeDept
-    ? await getCommunesMemeDepartement(codeDept, villeName, 12)
-    : [];
+  const [autresCommunes, newsItems] = await Promise.all([
+    codeDept ? getCommunesMemeDepartement(codeDept, villeName, 12) : Promise.resolve([]),
+    fetchLocalNews(villeName, codeDept, 6),
+  ]);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
@@ -259,6 +261,33 @@ export default async function CommunePage({ params }: Props) {
           </ul>
         </div>
       </section>
+
+      {/* Actualités */}
+      {newsItems.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-2xl font-bold mb-4">Actualités — {villeName}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {newsItems.map((item: any, i: number) => (
+              <a
+                key={i}
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="bg-geo-surface border border-geo-border rounded-xl p-4 hover:border-geo-accent/60 hover:bg-geo-accent/5 transition group"
+              >
+                <div className="text-sm text-geo-text group-hover:text-geo-accent transition line-clamp-2 leading-snug font-medium">
+                  {item.title}
+                </div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-[10px] text-geo-text2">{item.source}</span>
+                  <span className="text-[10px] text-geo-text2">{item.relativeDate}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+          <p className="text-[10px] text-geo-text2 mt-2">Source : Google News RSS — actualités mentionnant {villeName}</p>
+        </section>
+      )}
 
       {/* Communes du même département */}
       {autresCommunes.length > 0 && (

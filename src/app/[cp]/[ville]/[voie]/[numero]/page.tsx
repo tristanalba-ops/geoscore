@@ -3,6 +3,8 @@ import { getAddressBySeo } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { DPE_COLORS, type DpeClasse } from "@/types/database";
 import { MapEmbed } from "@/components/MapEmbed";
+import { fetchNearbyPOIs, groupPOIsByCategory, type POI } from "@/lib/overpass";
+import { fetchLocalNews, type NewsItem } from "@/lib/news";
 
 interface Props {
   params: { cp: string; ville: string; voie: string; numero: string };
@@ -77,6 +79,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AddressPage({ params }: Props) {
   const addr = await getAddressBySeo(params.cp, params.ville, params.voie, params.numero);
   if (!addr) return notFound();
+
+  // Fetch POI and news in parallel (non-blocking, timeout-safe)
+  const [pois, newsItems] = await Promise.all([
+    addr.latitude && addr.longitude
+      ? fetchNearbyPOIs(Number(addr.latitude), Number(addr.longitude), 1000, 30)
+      : Promise.resolve([] as POI[]),
+    fetchLocalNews(addr.nom_commune, addr.code_departement, 8),
+  ]);
+  const poiGroups = groupPOIsByCategory(pois);
 
   const villeName = params.ville.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const voieName = params.voie.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -742,7 +753,7 @@ export default async function AddressPage({ params }: Props) {
               Les statistiques de délinquance par commune (ministère de l&apos;Intérieur) et les données de la police/gendarmerie ne sont pas encore intégrées.
               Les indicateurs socio-économiques ci-contre (pauvreté, chômage, revenus) sont issus de l&apos;INSEE Filosofi et constituent un proxy utilisé par les professionnels.
             </p>
-            <div className="mt-3 text-xs text-geo-accent">Enrichissement prévu : stats ministère Intérieur + proximité commissariat/gendarmerie</div>
+            <div className="mt-3 text-[10px] text-geo-text2">Indicateurs socio-économiques : INSEE Filosofi. Statistiques de délinquance : ministère de l&apos;Intérieur (intégration prévue).</div>
           </div>
         </div>
       </Section>
@@ -750,41 +761,59 @@ export default async function AddressPage({ params }: Props) {
       {/* 13. COMMERCES & POI */}
       <Section title="Commerces &amp; services de proximité" icon="🛒">
         <p className="text-sm text-geo-text2 mb-4">
-          Couverture en équipements de proximité — source : Base Permanente des Équipements (INSEE).
+          Scores BPE (INSEE) + {pois.length > 0 ? `${pois.length} lieux identifiés` : "équipements"} dans un rayon de 1 km — sources : BPE, OpenStreetMap.
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-          <div className="p-3 bg-geo-bg rounded-lg text-center">
-            <div className="text-2xl mb-1">🏥</div>
+        {/* BPE Scores */}
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
+          <div className="p-2 bg-geo-bg rounded-lg text-center">
+            <div className="text-lg mb-1">🏥</div>
             <ScoreRow label="Santé" value={Number(addr.bpe_score_sante) || 0} />
-            <div className="text-xs text-geo-text2 mt-1">Médecins, pharmacies, hôpitaux</div>
           </div>
-          <div className="p-3 bg-geo-bg rounded-lg text-center">
-            <div className="text-2xl mb-1">🎓</div>
+          <div className="p-2 bg-geo-bg rounded-lg text-center">
+            <div className="text-lg mb-1">🎓</div>
             <ScoreRow label="Éducation" value={Number(addr.bpe_score_education) || 0} />
-            <div className="text-xs text-geo-text2 mt-1">Écoles, collèges, lycées</div>
           </div>
-          <div className="p-3 bg-geo-bg rounded-lg text-center">
-            <div className="text-2xl mb-1">🛍️</div>
+          <div className="p-2 bg-geo-bg rounded-lg text-center">
+            <div className="text-lg mb-1">🛍️</div>
             <ScoreRow label="Commerces" value={Number(addr.bpe_score_commerce) || 0} />
-            <div className="text-xs text-geo-text2 mt-1">Supermarchés, boulangeries</div>
           </div>
-          <div className="p-3 bg-geo-bg rounded-lg text-center">
-            <div className="text-2xl mb-1">🚌</div>
+          <div className="p-2 bg-geo-bg rounded-lg text-center">
+            <div className="text-lg mb-1">🚌</div>
             <ScoreRow label="Transports" value={Number(addr.bpe_score_transport) || 0} />
-            <div className="text-xs text-geo-text2 mt-1">Bus, tram, gare</div>
           </div>
-          <div className="p-3 bg-geo-bg rounded-lg text-center">
-            <div className="text-2xl mb-1">🎭</div>
+          <div className="p-2 bg-geo-bg rounded-lg text-center">
+            <div className="text-lg mb-1">🎭</div>
             <ScoreRow label="Loisirs" value={Number(addr.bpe_score_loisirs) || 0} />
-            <div className="text-xs text-geo-text2 mt-1">Cinémas, piscines, parcs</div>
           </div>
-          <div className="p-3 bg-geo-bg rounded-lg text-center">
-            <div className="text-2xl mb-1">📊</div>
-            <div className="text-lg font-bold text-geo-accent">{addr.bpe_nb_equipements ?? "—"}</div>
-            <div className="text-xs text-geo-text2 mt-1">Équipements totaux</div>
+          <div className="p-2 bg-geo-bg rounded-lg text-center">
+            <div className="text-lg mb-1">📊</div>
+            <div className="text-sm font-bold text-geo-accent">{addr.bpe_nb_equipements ?? "—"}</div>
+            <div className="text-[10px] text-geo-text2">Total BPE</div>
           </div>
         </div>
-        <div className="text-xs text-geo-accent">Enrichissement prévu : noms et distances via OpenStreetMap Overpass</div>
+        {/* Real POI from Overpass */}
+        {pois.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Object.entries(poiGroups).map(([groupName, groupPois]) =>
+              groupPois.length > 0 ? (
+                <div key={groupName} className="p-3 bg-geo-bg rounded-lg">
+                  <h4 className="text-xs font-semibold text-geo-accent mb-2 uppercase tracking-wider">{groupName} ({groupPois.length})</h4>
+                  <ul className="space-y-1">
+                    {groupPois.slice(0, 5).map((poi, i) => (
+                      <li key={i} className="flex justify-between text-xs">
+                        <span className="text-geo-text truncate mr-2">{poi.name}</span>
+                        <span className="text-geo-text2 whitespace-nowrap">{poi.distance < 1000 ? `${poi.distance} m` : `${(poi.distance / 1000).toFixed(1)} km`}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-geo-text2 italic">Aucun commerce identifié dans un rayon de 1 km via OpenStreetMap.</p>
+        )}
+        <p className="text-[10px] text-geo-text2 mt-3">Données : Base Permanente des Équipements (INSEE) + OpenStreetMap via Overpass API</p>
       </Section>
 
       {/* 14. ACTUALITÉS LOCALES */}
@@ -802,11 +831,29 @@ export default async function AddressPage({ params }: Props) {
           </div>
           <div className="p-4 bg-geo-bg rounded-lg">
             <h3 className="text-sm font-semibold mb-2 text-geo-text2">Fil d&apos;actualités</h3>
-            <p className="text-sm text-geo-text2 leading-relaxed">
-              Le module d&apos;actualités locales est en cours de développement. Il agrégera les flux RSS des mairies,
-              les publications de la communauté de communes et les articles de presse locale liés à {addr.nom_commune}.
-            </p>
-            <div className="mt-3 text-xs text-geo-accent">Enrichissement prévu : flux RSS mairie + Google News local</div>
+            {newsItems.length > 0 ? (
+              <ul className="space-y-2">
+                {newsItems.slice(0, 6).map((item, i) => (
+                  <li key={i} className="border-b border-geo-border/30 pb-2 last:border-0">
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="text-sm text-geo-text hover:text-geo-accent transition-colors line-clamp-2 leading-snug"
+                    >
+                      {item.title}
+                    </a>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-[10px] text-geo-text2">{item.source}</span>
+                      <span className="text-[10px] text-geo-text2">{item.relativeDate}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-geo-text2 italic">Aucune actualité récente trouvée pour {addr.nom_commune}.</p>
+            )}
+            <p className="text-[10px] text-geo-text2 mt-2">Source : Google News RSS</p>
           </div>
         </div>
       </Section>
