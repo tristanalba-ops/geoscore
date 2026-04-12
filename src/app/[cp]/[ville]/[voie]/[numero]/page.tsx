@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       type: "website",
       locale: "fr_FR",
-      url: `https://geoscore.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}`,
+      url: `https://intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}`,
     },
   };
 }
@@ -324,25 +324,25 @@ export default async function AddressPage({ params }: Props) {
                   "@type": "ListItem",
                   position: 1,
                   name: "Accueil",
-                  item: "https://geoscore.fr",
+                  item: "https://intentanalytics.fr",
                 },
                 {
                   "@type": "ListItem",
                   position: 2,
                   name: villeName,
-                  item: `https://geoscore.fr/${params.cp}/${params.ville}`,
+                  item: `https://intentanalytics.fr/${params.cp}/${params.ville}`,
                 },
                 {
                   "@type": "ListItem",
                   position: 3,
                   name: voieName,
-                  item: `https://geoscore.fr/${params.cp}/${params.ville}/${params.voie}`,
+                  item: `https://intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}`,
                 },
                 {
                   "@type": "ListItem",
                   position: 4,
                   name: `N°${params.numero}`,
-                  item: `https://geoscore.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}`,
+                  item: `https://intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}`,
                 },
               ],
             },

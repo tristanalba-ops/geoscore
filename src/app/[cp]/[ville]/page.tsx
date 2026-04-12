@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `Immobilier ${villeTitle} (${params.cp}) — Prix, DPE, quartiers`,
-    description: `Analyse immobilière complète de ${villeTitle} : prix au m², transactions DVF, DPE, risques, équipements. ${params.cp} — GeoScore.`,
+    description: `Analyse immobilière complète de ${villeTitle} : prix au m², transactions DVF, DPE, risques, équipements. ${params.cp} — Intent Analytics.`,
     alternates: {
       canonical: `/${params.cp}/${params.ville}`,
     },
@@ -156,7 +156,7 @@ export default async function VillePage({ params }: Props) {
                   longitude: commune.longitude,
                 }
               : undefined,
-            url: `https://geoscore.fr/${params.cp}/${params.ville}`,
+            url: `https://intentanalytics.fr/${params.cp}/${params.ville}`,
           }),
         }}
       />

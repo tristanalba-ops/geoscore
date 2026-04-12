@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   // ISR : revalide les pages SEO toutes les 24h
   experimental: {
     typedRoutes: true,
