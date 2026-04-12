@@ -1,21 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
-// Variables d'environnement — à configurer dans .env.local
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Client côté serveur (SSR / ISR)
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
-// Helpers pour les requêtes courantes
+// ─── Adresse (page détail) ────────────────────────────────────────
 export async function getAddressBySeo(
   cp: string,
   commune: string,
   voie: string,
   numero: string
 ) {
-  // Utilise la fonction RPC Postgres qui gère unaccent() + normalisation tirets
   const voieDecoded = voie.replace(/-/g, " ");
   const communeDecoded = commune.replace(/-/g, " ");
 
@@ -30,42 +27,63 @@ export async function getAddressBySeo(
   return data[0];
 }
 
-export async function getVillePage(cp: string, commune: string) {
+// ─── Commune (page ville) ─────────────────────────────────────────
+export async function getCommuneStats(cp: string, commune: string) {
   const communeDecoded = commune.replace(/-/g, " ");
-
-  // Commune context
-  const { data: communeData } = await supabase
-    .from("commune_seo_context")
-    .select("*")
-    .eq("code_commune", cp.substring(0, 2) + "%") // Approximation — on match par nom
-    .ilike("nom", communeDecoded)
-    .limit(1)
-    .single();
-
-  // Stats agrégées pour la commune
-  const { data: addresses, count } = await supabase
-    .from("seo_page_data")
-    .select("*", { count: "exact", head: false })
-    .eq("code_postal", cp)
-    .ilike("nom_commune", communeDecoded)
-    .order("dvf_prix_m2_median_iris", { ascending: false, nullsFirst: false })
-    .limit(20);
-
-  return { commune: communeData, addresses, totalAddresses: count };
+  const { data, error } = await supabase.rpc("get_commune_stats", {
+    p_cp: cp,
+    p_commune: communeDecoded,
+  });
+  if (error || !data) return null;
+  return data as any;
 }
 
-export async function getVoiePage(cp: string, commune: string, voie: string) {
-  const voieDecoded = voie.replace(/-/g, " ");
+export async function getCommuneVoies(cp: string, commune: string, limit = 50) {
   const communeDecoded = commune.replace(/-/g, " ");
+  const { data, error } = await supabase.rpc("get_commune_voies", {
+    p_cp: cp,
+    p_commune: communeDecoded,
+    p_limit: limit,
+  });
+  if (error || !data) return [];
+  return data as any[];
+}
 
-  const { data, count } = await supabase
-    .from("seo_page_data")
-    .select("*", { count: "exact" })
-    .eq("code_postal", cp)
-    .ilike("nom_commune", communeDecoded)
-    .ilike("nom_voie", `%${voieDecoded}%`)
-    .order("numero", { ascending: true })
-    .limit(100);
+export async function getCommunesMemeDepartement(
+  codeDepartement: string,
+  excludeCommune: string,
+  limit = 12
+) {
+  const { data, error } = await supabase.rpc("get_communes_meme_departement", {
+    p_code_departement: codeDepartement,
+    p_exclude_commune: excludeCommune,
+    p_limit: limit,
+  });
+  if (error || !data) return [];
+  return data as any[];
+}
 
-  return { addresses: data, totalAddresses: count };
+// ─── Voie (page rue) ──────────────────────────────────────────────
+export async function getVoieStats(cp: string, commune: string, voie: string) {
+  const communeDecoded = commune.replace(/-/g, " ");
+  const voieDecoded = voie.replace(/-/g, " ");
+  const { data, error } = await supabase.rpc("get_voie_stats", {
+    p_cp: cp,
+    p_commune: communeDecoded,
+    p_voie: voieDecoded,
+  });
+  if (error || !data) return null;
+  return data as any;
+}
+
+export async function getVoieAdresses(cp: string, commune: string, voie: string) {
+  const communeDecoded = commune.replace(/-/g, " ");
+  const voieDecoded = voie.replace(/-/g, " ");
+  const { data, error } = await supabase.rpc("get_voie_adresses", {
+    p_cp: cp,
+    p_commune: communeDecoded,
+    p_voie: voieDecoded,
+  });
+  if (error || !data) return [];
+  return data as any[];
 }

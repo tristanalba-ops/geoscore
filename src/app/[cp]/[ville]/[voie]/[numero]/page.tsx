@@ -142,7 +142,12 @@ export default async function AddressPage({ params }: Props) {
 
       {/* Map placeholder */}
       <div className="mb-10">
-        <MapEmbed lat={addr.latitude} lng={addr.longitude} label={fullAddress} />
+        <MapEmbed
+          lat={addr.latitude}
+          lng={addr.longitude}
+          label={fullAddress}
+          address={fullAddress}
+        />
       </div>
 
       {/* Sections */}
