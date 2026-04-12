@@ -8,7 +8,10 @@ export const metadata: Metadata = {
   },
   description:
     "Analysez n'importe quelle adresse en France : estimation, DPE, risques, quartier, équipements. Données DVF, ADEME, INSEE croisées.",
-  metadataBase: new URL("https://intentanalytics.fr"),
+  metadataBase: new URL("https://app.intentanalytics.fr"),
+  verification: {
+    google: "XLr6Pui_Qs67HT_B59vdORsRRFPJgBglr0nPm1RLJMk",
+  },
   openGraph: {
     siteName: "Intent Analytics",
     locale: "fr_FR",
