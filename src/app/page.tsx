@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getAllDepartements } from "@/lib/supabase";
 
 export const revalidate = 3600; // ISR 1h
 
@@ -48,7 +49,11 @@ function formatNumber(n: number): string {
 }
 
 export default async function HomePage() {
-  const [stats, cities] = await Promise.all([getStats(), getLatestCities()]);
+  const [stats, cities, departements] = await Promise.all([
+    getStats(),
+    getLatestCities(),
+    getAllDepartements(),
+  ]);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-16">
@@ -201,6 +206,62 @@ export default async function HomePage() {
             question="Combien d'adresses sont couvertes ?"
             answer={`Actuellement ${stats?.total_adresses.toLocaleString("fr-FR") ?? "—"} adresses sont analysées sur ${stats?.nb_communes ?? "—"} communes dans ${stats?.nb_departements ?? "—"} départements. Le processus d'indexation est en cours et couvre progressivement l'ensemble du territoire français.`}
           />
+        </div>
+      </section>
+
+      {/* Annuaire des départements — maillage interne */}
+      {departements.length > 0 && (
+        <section className="mb-16">
+          <h2 className="text-2xl font-bold mb-2">
+            Tous les départements couverts
+          </h2>
+          <p className="text-geo-text2 mb-6">
+            Explorez les données immobilières par département — prix, DPE, communes analysées
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {departements.map((d: any) => (
+              <a
+                key={d.code_departement}
+                href={`/departement/${d.code_departement}`}
+                className="bg-geo-surface border border-geo-border rounded-lg px-4 py-3 hover:border-geo-accent/60 hover:bg-geo-accent/5 transition text-sm group"
+              >
+                <span className="font-semibold text-geo-accent group-hover:underline">
+                  {d.code_departement}
+                </span>
+                {d.nom_departement && (
+                  <span className="text-geo-text ml-1.5">{d.nom_departement}</span>
+                )}
+                <div className="text-xs text-geo-text2 mt-1">
+                  {d.nb_communes} communes
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Explorer aussi — liens transversaux */}
+      <section className="mb-16 pt-8 border-t border-geo-border">
+        <h2 className="text-lg font-semibold mb-4">Explorer aussi</h2>
+        <div className="flex flex-wrap gap-3">
+          <a href="/estimation" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Estimer un bien
+          </a>
+          <a href="/renovation-energetique" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Rénovation énergétique
+          </a>
+          <a href="/explorations" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Explorations
+          </a>
+          <a href="/donnees" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Sources de données
+          </a>
+          <a href="/methodologie" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Méthodologie
+          </a>
+          <a href="/recherche" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Recherche d&apos;adresse
+          </a>
         </div>
       </section>
 

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getAddressBySeo } from "@/lib/supabase";
+import { getAddressBySeo, getNeighborAddresses } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import { DPE_COLORS, type DpeClasse } from "@/types/database";
 import { MapEmbed } from "@/components/MapEmbed";
@@ -80,12 +80,13 @@ export default async function AddressPage({ params }: Props) {
   const addr = await getAddressBySeo(params.cp, params.ville, params.voie, params.numero);
   if (!addr) return notFound();
 
-  // Fetch POI and news in parallel (non-blocking, timeout-safe)
-  const [pois, newsItems] = await Promise.all([
+  // Fetch POI, news, and neighbor addresses in parallel (non-blocking, timeout-safe)
+  const [pois, newsItems, neighbors] = await Promise.all([
     addr.latitude && addr.longitude
       ? fetchNearbyPOIs(Number(addr.latitude), Number(addr.longitude), 1000, 30)
       : Promise.resolve([] as POI[]),
     fetchLocalNews(addr.nom_commune, addr.code_departement, 8),
+    getNeighborAddresses(params.cp, params.ville, params.voie, params.numero, 6),
   ]);
   const poiGroups = groupPOIsByCategory(pois);
 
@@ -858,7 +859,29 @@ export default async function AddressPage({ params }: Props) {
         </div>
       </Section>
 
-      {/* 15. COMMUNE */}
+      {/* 15. ADRESSES VOISINES */}
+      {neighbors.length > 0 && (
+        <Section title="Adresses voisines" icon="🏠">
+          <p className="text-geo-text2 mb-4">Autres adresses sur {voieName}</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {neighbors.map((n: any) => (
+              <a
+                key={n.numero}
+                href={`/${params.cp}/${params.ville}/${params.voie}/${n.numero}`}
+                className="bg-geo-surface border border-geo-border rounded-lg p-4 hover:border-geo-accent transition"
+              >
+                <div className="font-semibold text-geo-accent">N°{n.numero}</div>
+                {n.dpe_classe && <div className="text-xs text-geo-text2">DPE {n.dpe_classe}</div>}
+                {n.estimation_prix && (
+                  <div className="text-sm mt-1">{Number(n.estimation_prix).toLocaleString("fr-FR")} €</div>
+                )}
+              </a>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* 16. COMMUNE */}
       {addr.commune_wiki_summary && (
         <Section title={`À propos de ${addr.nom_commune}`} icon="🏘️">
           <p className="text-sm text-geo-text2 leading-relaxed">
@@ -884,6 +907,19 @@ export default async function AddressPage({ params }: Props) {
         {addr.page_generated_at && (
           <span className="ml-2">· Dernière mise à jour : {new Date(addr.page_generated_at).toLocaleDateString("fr-FR")}</span>
         )}
+      </div>
+
+      {/* Navigation retour */}
+      <div className="flex gap-4 justify-center text-sm mt-8 mb-4">
+        <a href={`/${params.cp}/${params.ville}/${params.voie}`} className="text-geo-accent hover:underline">
+          ← {voieName}
+        </a>
+        <a href={`/${params.cp}/${params.ville}`} className="text-geo-accent hover:underline">
+          ← {villeName} ({params.cp})
+        </a>
+        <a href={`/departement/${addr.code_departement}`} className="text-geo-accent hover:underline">
+          ← Département {addr.code_departement}
+        </a>
       </div>
 
       {/* JSON-LD */}

@@ -109,4 +109,36 @@ export async function getVoieAdresses(cp: string, commune: string, voie: string)
   if (error || !data) return [];
   return data as any[];
 }
+
+// ─── Département ─────────────────────────────────────────────────
+export async function getDepartementStats(dept: string) {
+  if (!isReady()) return null;
+  const { data, error } = await supabase.rpc("get_departement_stats", { p_dept: dept });
+  if (error) { console.error("[getDepartementStats] RPC error:", error.message); return null; }
+  return parseJsonbResult(data);
+}
+
+export async function getDepartementCommunes(dept: string, limit = 100) {
+  if (!isReady()) return [];
+  const { data, error } = await supabase.rpc("get_departement_communes", { p_dept: dept, p_limit: limit });
+  if (error || !data) return [];
+  return data as any[];
+}
+
+export async function getNeighborAddresses(cp: string, commune: string, voie: string, numero: string, limit = 4) {
+  if (!isReady()) return [];
+  const { data, error } = await supabase.rpc("get_neighbor_addresses", {
+    p_cp: cp, p_commune: commune.replace(/-/g, " "), p_voie: voie, p_numero: numero, p_limit: limit,
+  });
+  if (error || !data) return [];
+  return data as any[];
+}
+
+export async function getAllDepartements() {
+  if (!isReady()) return [];
+  const { data, error } = await supabase.rpc("get_all_departements");
+  if (error || !data) return [];
+  return data as any[];
+}
+
 // force redeploy - GRANT fix applied 1776014718

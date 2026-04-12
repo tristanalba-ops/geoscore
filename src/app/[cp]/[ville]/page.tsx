@@ -74,6 +74,14 @@ export default async function CommunePage({ params }: Props) {
           Accueil
         </a>
         <span className="mx-2">›</span>
+        {codeDept && (
+          <>
+            <a href={`/departement/${codeDept}`} className="hover:text-geo-accent">
+              Département {codeDept}
+            </a>
+            <span className="mx-2">›</span>
+          </>
+        )}
         <span className="text-geo-text">{villeName} ({params.cp})</span>
       </nav>
 
@@ -297,6 +305,14 @@ export default async function CommunePage({ params }: Props) {
           </h2>
           <p className="text-geo-text2 mb-6">
             Explorez les communes voisines analysées
+            {codeDept && (
+              <>
+                {" "}
+                <a href={'/departement/' + codeDept} className="text-geo-accent hover:underline text-sm">
+                  Voir toutes les communes du département →
+                </a>
+              </>
+            )}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {autresCommunes.map((c: any) => (
@@ -321,6 +337,27 @@ export default async function CommunePage({ params }: Props) {
           </div>
         </section>
       )}
+
+      {/* ── Maillage interne ── */}
+      <section className="mt-12 pt-8 border-t border-geo-border">
+        <h2 className="text-lg font-semibold mb-4">Explorer aussi</h2>
+        <div className="flex flex-wrap gap-3">
+          {codeDept && (
+            <a href={`/departement/${codeDept}`} className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+              Département {codeDept}
+            </a>
+          )}
+          <a href="/estimation" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Estimer un bien
+          </a>
+          <a href="/renovation-energetique" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Rénovation énergétique
+          </a>
+          <a href="/explorations" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Explorations
+          </a>
+        </div>
+      </section>
 
       {/* JSON-LD */}
       <script

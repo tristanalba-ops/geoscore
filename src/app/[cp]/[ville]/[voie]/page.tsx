@@ -58,6 +58,7 @@ export default async function VoiePage({ params }: Props) {
   const voieName = stats.nom_voie;
   const communeName = stats.nom_commune;
 
+  const codeDept = stats.code_departement || params.cp.substring(0, 2);
   const villeName = params.ville
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -76,16 +77,11 @@ export default async function VoiePage({ params }: Props) {
     <div className="max-w-6xl mx-auto px-6 py-12">
       {/* Breadcrumb */}
       <nav className="text-sm text-geo-text2 mb-8">
-        <a href="/" className="hover:text-geo-accent">
-          Accueil
-        </a>
+        <a href="/" className="hover:text-geo-accent">Accueil</a>
         <span className="mx-2">›</span>
-        <a
-          href={`/${params.cp}/${params.ville}`}
-          className="hover:text-geo-accent"
-        >
-          {villeName}
-        </a>
+        <a href={`/departement/${codeDept}`} className="hover:text-geo-accent">Département {codeDept}</a>
+        <span className="mx-2">›</span>
+        <a href={`/${params.cp}/${params.ville}`} className="hover:text-geo-accent">{villeName}</a>
         <span className="mx-2">›</span>
         <span className="text-geo-text">{voieName}</span>
       </nav>
@@ -220,15 +216,38 @@ export default async function VoiePage({ params }: Props) {
         </div>
       </section>
 
-      {/* Lien retour commune */}
-      <div className="text-center">
-        <a
-          href={`/${params.cp}/${params.ville}`}
-          className="text-geo-accent hover:underline"
-        >
-          ← Retour à {villeName} ({params.cp})
+      {/* Navigation maillage interne */}
+      <div className="flex flex-wrap gap-4 justify-center mt-8 mb-4">
+        <a href={`/${params.cp}/${params.ville}`} className="text-geo-accent hover:underline text-sm">
+          ← {villeName} ({params.cp})
         </a>
+        {codeDept && (
+          <a href={`/departement/${codeDept}`} className="text-geo-accent hover:underline text-sm">
+            ← Département {codeDept}
+          </a>
+        )}
       </div>
+
+      {/* Explorer aussi */}
+      <section className="mt-8 pt-8 border-t border-geo-border">
+        <h2 className="text-lg font-semibold mb-4">Explorer aussi</h2>
+        <div className="flex flex-wrap gap-3">
+          <a href={`/${params.cp}/${params.ville}`} className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            {villeName} ({params.cp})
+          </a>
+          {codeDept && (
+            <a href={`/departement/${codeDept}`} className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+              Département {codeDept}
+            </a>
+          )}
+          <a href="/estimation" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Estimer un bien
+          </a>
+          <a href="/renovation-energetique" className="text-sm bg-geo-surface border border-geo-border rounded-full px-4 py-2 hover:border-geo-accent transition">
+            Rénovation énergétique
+          </a>
+        </div>
+      </section>
 
       {/* JSON-LD */}
       <script
