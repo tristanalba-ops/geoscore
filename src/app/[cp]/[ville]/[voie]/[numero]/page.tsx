@@ -431,7 +431,387 @@ export default async function AddressPage({ params }: Props) {
         </div>
       </Section>
 
-      {/* 7. COMMUNE */}
+      {/* 7. POUR LES FAMILLES */}
+      <Section title="S'installer en famille" icon="👨‍👩‍👧‍👦">
+        <p className="text-sm text-geo-text2 mb-4">
+          Indicateurs clés pour évaluer ce quartier en tant que famille avec enfants.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Éducation &amp; enfance</h3>
+            <div className="space-y-2">
+              <ScoreRow label="Éducation" value={Number(addr.bpe_score_education) || 0} />
+              <ScoreRow label="Loisirs" value={Number(addr.bpe_score_loisirs) || 0} />
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-2">
+              <DataItem label="Familles (0-14 ans)" value={addr.iris_part_0_14 ? `${addr.iris_part_0_14}%` : "—"} context={Number(addr.iris_part_0_14) > 20 ? "Quartier familial" : Number(addr.iris_part_0_14) > 15 ? "Mixte" : "Peu d'enfants"} />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Santé &amp; sécurité</h3>
+            <div className="space-y-2">
+              <ScoreRow label="Santé" value={Number(addr.bpe_score_sante) || 0} />
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-2">
+              <DataItem label="Risque inondation" value={addr.commune_risque_inondation ? "Zone exposée" : "Non concerné"} context={addr.commune_risque_inondation ? "Vérifier le PPRI de la commune" : "Pas de risque identifié"} valueColor={addr.commune_risque_inondation ? "#ef4444" : "#22c55e"} />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Cadre de vie</h3>
+            <div className="space-y-2">
+              <ScoreRow label="Commerces" value={Number(addr.bpe_score_commerce) || 0} />
+              <ScoreRow label="Transports" value={Number(addr.bpe_score_transport) || 0} />
+            </div>
+            <div className="mt-3 grid grid-cols-1 gap-2">
+              <DataItem label="Âge moyen" value={addr.commune_age_moyen ? `${addr.commune_age_moyen} ans` : "—"} context={Number(addr.commune_age_moyen) < 38 ? "Population jeune" : Number(addr.commune_age_moyen) < 42 ? "Population mixte" : "Population vieillissante"} />
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 p-4 bg-geo-bg rounded-lg text-sm text-geo-text2">
+          <strong className="text-geo-text">Verdict famille :</strong>{" "}
+          {(() => {
+            const scoreEduc = Number(addr.bpe_score_education) || 0;
+            const scoreSante = Number(addr.bpe_score_sante) || 0;
+            const scoreTransport = Number(addr.bpe_score_transport) || 0;
+            const familyScore = Math.round((scoreEduc + scoreSante + scoreTransport) / 3);
+            if (familyScore >= 70) return `Ce quartier est très bien adapté aux familles (score ${familyScore}/100). Bonne couverture en écoles, services de santé et transports.`;
+            if (familyScore >= 40) return `Quartier correct pour les familles (score ${familyScore}/100). Quelques services à proximité, mais vérifiez les distances aux établissements scolaires.`;
+            return `Quartier peu adapté aux familles (score ${familyScore}/100). Services éducatifs et de santé limités à proximité.`;
+          })()}
+        </div>
+      </Section>
+
+      {/* 8. POUR LES INVESTISSEURS */}
+      <Section title="Analyse investisseur" icon="📈">
+        <p className="text-sm text-geo-text2 mb-4">
+          Indicateurs de rentabilité et de potentiel pour un investissement locatif ou patrimonial.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <DataItem
+            label="Estimation bien"
+            value={estimation ? `${formatNum(estimation)} €` : "—"}
+            context={estimBas && estimHaut ? `${formatNum(estimBas)} – ${formatNum(estimHaut)} €` : undefined}
+            accent
+          />
+          <DataItem
+            label="Prix / m²"
+            value={prixM2 ? `${formatNum(prixM2)} €` : prixM2Median ? `~${formatNum(prixM2Median)} €` : "—"}
+            context="DVF"
+          />
+          <DataItem
+            label="Tension marché"
+            value={addr.score_tension_prix ? `${addr.score_tension_prix} / 10` : "—"}
+            context={Number(addr.score_tension_prix) >= 7 ? "Marché très tendu" : Number(addr.score_tension_prix) >= 4 ? "Demande modérée" : "Marché détendu"}
+          />
+          <DataItem
+            label="Liquidité"
+            value={addr.score_liquidite_marche ? `${addr.score_liquidite_marche} / 10` : "—"}
+            context={Number(addr.score_liquidite_marche) >= 7 ? "Revente facile" : Number(addr.score_liquidite_marche) >= 4 ? "Délai moyen" : "Revente longue"}
+          />
+        </div>
+        {/* ROI rénovation */}
+        {addr.reno_cible_classe && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Potentiel rénovation → plus-value</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <DataItem label="DPE actuel" value={dpeClasse ?? "—"} valueColor={dpeClasse ? DPE_BG[dpeClasse] : undefined} />
+              <DataItem label="DPE cible" value={addr.reno_cible_classe} valueColor={DPE_BG[addr.reno_cible_classe] || undefined} />
+              <DataItem label="Coût travaux" value={addr.reno_cout_estime ? `${formatNum(Number(addr.reno_cout_estime))} €` : "—"} />
+              <DataItem label="Aides déductibles" value={addr.reno_aides_estimees ? `${formatNum(Number(addr.reno_aides_estimees))} €` : "—"} context="MaPrimeRénov + CEE" />
+              <DataItem label="Plus-value estimée" value={addr.reno_plus_value_pct ? `+${addr.reno_plus_value_pct}%` : "—"} accent />
+            </div>
+          </div>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-geo-bg rounded-lg">
+            <h3 className="text-sm font-semibold mb-2 text-geo-text2">Points forts</h3>
+            <ul className="space-y-1 text-sm text-geo-text2">
+              {Number(addr.bpe_score_global) >= 70 && <li className="flex gap-2"><span className="text-green-400">+</span> Quartier bien équipé ({addr.bpe_score_global}/100)</li>}
+              {Number(addr.score_tension_prix) >= 6 && <li className="flex gap-2"><span className="text-green-400">+</span> Marché tendu — valorisation probable</li>}
+              {Number(addr.score_potentiel_dpe) >= 7 && <li className="flex gap-2"><span className="text-green-400">+</span> Fort potentiel rénovation DPE</li>}
+              {Number(addr.commune_evolution_pop) > 2 && <li className="flex gap-2"><span className="text-green-400">+</span> Commune en croissance ({addr.commune_evolution_pop}%)</li>}
+              {addr.iris_revenu_median && Number(addr.iris_revenu_median) > 22000 && <li className="flex gap-2"><span className="text-green-400">+</span> Revenus médians élevés ({formatNum(Number(addr.iris_revenu_median))} €)</li>}
+            </ul>
+          </div>
+          <div className="p-4 bg-geo-bg rounded-lg">
+            <h3 className="text-sm font-semibold mb-2 text-geo-text2">Points de vigilance</h3>
+            <ul className="space-y-1 text-sm text-geo-text2">
+              {Number(addr.score_liquidite_marche) < 4 && <li className="flex gap-2"><span className="text-red-400">−</span> Liquidité faible — revente lente</li>}
+              {addr.commune_risque_inondation && <li className="flex gap-2"><span className="text-red-400">−</span> Zone inondable — surprime assurance</li>}
+              {dpeClasse && ["F", "G"].includes(dpeClasse) && <li className="flex gap-2"><span className="text-red-400">−</span> Passoire énergétique — interdiction de location programmée</li>}
+              {Number(addr.iris_taux_pauvrete) > 20 && <li className="flex gap-2"><span className="text-red-400">−</span> Taux de pauvreté élevé ({addr.iris_taux_pauvrete}%)</li>}
+              {Number(addr.commune_nb_catnat) > 30 && <li className="flex gap-2"><span className="text-red-400">−</span> Historique CatNat important ({addr.commune_nb_catnat} arrêtés)</li>}
+            </ul>
+          </div>
+        </div>
+      </Section>
+
+      {/* 9. POUR LES ARTISANS */}
+      <Section title="Potentiel travaux & rénovation" icon="🔧">
+        <p className="text-sm text-geo-text2 mb-4">
+          Données utiles pour les artisans, entreprises du bâtiment et diagnostiqueurs.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">État énergétique du bien</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <DataItem label="DPE actuel" value={dpeClasse ?? "Non diagnostiqué"} valueColor={dpeClasse ? DPE_BG[dpeClasse] : undefined} />
+              <DataItem label="Consommation" value={addr.dpe_conso_m2 ? `${addr.dpe_conso_m2} kWh/m²/an` : "—"} />
+              <DataItem label="Surface" value={addr.dpe_surface ? `${addr.dpe_surface} m²` : addr.dvf_derniere_surface ? `${addr.dvf_derniere_surface} m²` : "—"} />
+              <DataItem label="Type" value={addr.dpe_type_batiment ?? addr.dvf_dernier_type ?? "—"} />
+            </div>
+            {addr.reno_cible_classe && (
+              <div className="mt-4 p-3 bg-geo-accent/10 border border-geo-accent/20 rounded-lg">
+                <div className="text-xs text-geo-accent font-semibold uppercase tracking-wider mb-1">Scénario rénovation</div>
+                <div className="text-sm text-geo-text">
+                  Passage de <strong>{dpeClasse}</strong> à <strong>{addr.reno_cible_classe}</strong> —
+                  budget estimé <strong>{addr.reno_cout_estime ? `${formatNum(Number(addr.reno_cout_estime))} €` : "N/A"}</strong>
+                  {addr.reno_reste_charge && <> (reste à charge : <strong>{formatNum(Number(addr.reno_reste_charge))} €</strong>)</>}
+                </div>
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Contexte quartier — potentiel marché</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <DataItem label="% DPE E-F-G quartier" value={addr.dpe_pct_efg_iris ? `${addr.dpe_pct_efg_iris}%` : "—"} context={Number(addr.dpe_pct_efg_iris) > 30 ? "Fort gisement de rénovation" : "Gisement modéré"} />
+              <DataItem label="Score réno" value={addr.score_potentiel_dpe ? `${addr.score_potentiel_dpe}/10` : "—"} accent />
+              <DataItem label="Zone climatique" value={addr.commune_zone_climatique ?? "—"} context={addr.commune_dju_chauffage ? `${addr.commune_dju_chauffage} DJU` : undefined} />
+              <DataItem label="Aides disponibles" value={addr.reno_aides_estimees ? `${formatNum(Number(addr.reno_aides_estimees))} €` : "—"} context="MaPrimeRénov + CEE estimés" />
+            </div>
+            <div className="mt-4 p-4 bg-geo-bg rounded-lg text-sm text-geo-text2">
+              <strong className="text-geo-text">Potentiel artisan :</strong>{" "}
+              {Number(addr.dpe_pct_efg_iris) > 30
+                ? `Plus de ${addr.dpe_pct_efg_iris}% des logements du quartier sont classés E, F ou G — fort potentiel de prospection pour les travaux d'isolation et de chauffage.`
+                : addr.dpe_pct_efg_iris
+                  ? `${addr.dpe_pct_efg_iris}% des logements du quartier sont encore mal classés — marché de rénovation accessible.`
+                  : "Données DPE quartier non disponibles."}
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* 10. POUR LES ASSUREURS */}
+      <Section title="Profil de risque — Assurance" icon="🛡️">
+        <p className="text-sm text-geo-text2 mb-4">
+          Synthèse des risques naturels, climatiques et historiques pour l&apos;évaluation du profil assurable.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <DataItem
+            label="Inondation"
+            value={addr.commune_risque_inondation ? "Exposé" : "Non exposé"}
+            valueColor={addr.commune_risque_inondation ? "#ef4444" : "#22c55e"}
+            context={addr.commune_risque_inondation ? "Surprime possible" : "Risque standard"}
+          />
+          <DataItem
+            label="Argile"
+            value={addr.commune_risque_argile ? "Exposé" : "Non exposé"}
+            valueColor={addr.commune_risque_argile ? "#f59e0b" : "#22c55e"}
+            context={addr.commune_risque_argile ? "Risque de fissures" : "Sol stable"}
+          />
+          <DataItem
+            label="Séisme"
+            value={`Zone ${addr.commune_risque_seisme ?? "?"}`}
+            context={Number(addr.commune_risque_seisme) >= 4 ? "Zone à risque élevé" : Number(addr.commune_risque_seisme) >= 3 ? "Risque modéré" : "Risque faible"}
+          />
+          <DataItem
+            label="Arrêtés CatNat"
+            value={addr.commune_nb_catnat?.toString() ?? "—"}
+            context={Number(addr.commune_nb_catnat) > 30 ? "Commune très exposée" : Number(addr.commune_nb_catnat) > 10 ? "Historique significatif" : "Peu d'événements"}
+            accent
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Scoring risque global</h3>
+            {(() => {
+              let score = 0;
+              if (addr.commune_risque_inondation) score += 3;
+              if (addr.commune_risque_argile) score += 2;
+              if (Number(addr.commune_risque_seisme) >= 3) score += 2;
+              if (Number(addr.commune_nb_catnat) > 30) score += 2;
+              if (Number(addr.commune_nb_catnat) > 10) score += 1;
+              const level = score >= 6 ? "Élevé" : score >= 3 ? "Modéré" : "Faible";
+              const color = score >= 6 ? "#ef4444" : score >= 3 ? "#f59e0b" : "#22c55e";
+              return (
+                <div className="p-4 bg-geo-bg rounded-lg">
+                  <div className="text-2xl font-bold mb-1" style={{ color }}>{level}</div>
+                  <div className="text-xs text-geo-text2">Score composite : {score}/10</div>
+                  <div className="w-full h-3 bg-geo-surface rounded-full mt-2 overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${score * 10}%`, backgroundColor: color }} />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Climat &amp; chauffage</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <DataItem label="Zone climatique" value={addr.commune_zone_climatique ?? "—"} />
+              <DataItem label="DJU chauffage" value={addr.commune_dju_chauffage?.toString() ?? "—"} context="Degré-jours unifiés" />
+              <DataItem label="DPE" value={dpeClasse ?? "—"} context={addr.dpe_conso_m2 ? `${addr.dpe_conso_m2} kWh/m²/an` : undefined} />
+              <DataItem label="Type bâtiment" value={addr.dpe_type_batiment ?? addr.dvf_dernier_type ?? "—"} />
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* 11. POUR LES BANQUIERS */}
+      <Section title="Analyse bancaire — Financement" icon="🏦">
+        <p className="text-sm text-geo-text2 mb-4">
+          Éléments d&apos;appréciation pour l&apos;octroi de crédit immobilier et la valorisation patrimoniale.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <DataItem
+            label="Valeur estimée"
+            value={estimation ? `${formatNum(estimation)} €` : "—"}
+            context={estimBas && estimHaut ? `Fourchette : ${formatNum(estimBas)} – ${formatNum(estimHaut)} €` : undefined}
+            accent
+          />
+          <DataItem
+            label="Prix / m²"
+            value={prixM2 ? `${formatNum(prixM2)} €` : prixM2Median ? `~${formatNum(prixM2Median)} €` : "—"}
+            context={prixM2Median ? `Médiane IRIS : ${formatNum(prixM2Median)} €` : undefined}
+          />
+          <DataItem
+            label="Surface"
+            value={addr.dvf_derniere_surface ? `${addr.dvf_derniere_surface} m²` : addr.dpe_surface ? `${addr.dpe_surface} m²` : "—"}
+          />
+          <DataItem
+            label="Type de bien"
+            value={addr.dvf_dernier_type ?? "—"}
+            context={addr.dvf_dernier_nb_pieces ? `${addr.dvf_dernier_nb_pieces} pièces` : undefined}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Indicateurs de marché</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <DataItem label="Tension marché" value={addr.score_tension_prix ? `${addr.score_tension_prix}/10` : "—"} context={Number(addr.score_tension_prix) >= 7 ? "Marché porteur" : "Marché calme"} />
+              <DataItem label="Liquidité" value={addr.score_liquidite_marche ? `${addr.score_liquidite_marche}/10` : "—"} context={Number(addr.score_liquidite_marche) >= 7 ? "Garantie solide" : "Risque de revente"} />
+              <DataItem label="Transactions IRIS" value={addr.dvf_nb_transactions_iris?.toString() ?? "—"} context="Volume DVF" />
+              <DataItem label="Évolution pop." value={addr.commune_evolution_pop ? `${Number(addr.commune_evolution_pop) > 0 ? "+" : ""}${addr.commune_evolution_pop}%` : "—"} context="Dynamisme démographique" />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Simulation indicative (taux 3.5%, 20 ans)</h3>
+            {(() => {
+              const valeur = estimation || (prixM2Median && addr.dvf_derniere_surface ? prixM2Median * Number(addr.dvf_derniere_surface) : null);
+              if (!valeur) return <p className="text-sm text-geo-text2">Estimation insuffisante pour simuler.</p>;
+              const apport10 = Math.round(valeur * 0.1);
+              const emprunt = valeur - apport10;
+              const taux = 0.035 / 12;
+              const n = 240;
+              const mensualite = Math.round(emprunt * (taux * Math.pow(1 + taux, n)) / (Math.pow(1 + taux, n) - 1));
+              const coutTotal = mensualite * n;
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  <DataItem label="Apport 10%" value={`${formatNum(apport10)} €`} />
+                  <DataItem label="Emprunt" value={`${formatNum(emprunt)} €`} />
+                  <DataItem label="Mensualité" value={`${formatNum(mensualite)} €/mois`} accent />
+                  <DataItem label="Coût total crédit" value={`${formatNum(coutTotal)} €`} context={`Dont ${formatNum(coutTotal - emprunt)} € d'intérêts`} />
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      </Section>
+
+      {/* 12. SÉCURITÉ */}
+      <Section title="Sécurité &amp; tranquillité" icon="🔒">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="grid grid-cols-2 gap-3">
+              <DataItem
+                label="Taux de pauvreté"
+                value={addr.iris_taux_pauvrete ? `${addr.iris_taux_pauvrete}%` : "—"}
+                context={Number(addr.iris_taux_pauvrete) > 25 ? "Quartier sensible" : Number(addr.iris_taux_pauvrete) > 15 ? "Niveau moyen" : "Quartier aisé"}
+              />
+              <DataItem
+                label="Taux de chômage"
+                value={addr.iris_taux_chomage ? `${Number(addr.iris_taux_chomage).toFixed(1)}%` : "—"}
+                context={Number(addr.iris_taux_chomage) > 15 ? "Supérieur à la moyenne" : "Dans la moyenne"}
+              />
+              <DataItem label="Revenu médian" value={addr.iris_revenu_median ? `${formatNum(Number(addr.iris_revenu_median))} €` : "—"} context="Par UC / an" />
+              <DataItem label="Population IRIS" value={addr.iris_population ? formatNum(addr.iris_population) : "—"} />
+            </div>
+          </div>
+          <div className="p-4 bg-geo-bg rounded-lg">
+            <h3 className="text-sm font-semibold mb-2 text-geo-text2">Indicateurs disponibles</h3>
+            <p className="text-sm text-geo-text2 leading-relaxed">
+              Les statistiques de délinquance par commune (ministère de l&apos;Intérieur) et les données de la police/gendarmerie ne sont pas encore intégrées.
+              Les indicateurs socio-économiques ci-contre (pauvreté, chômage, revenus) sont issus de l&apos;INSEE Filosofi et constituent un proxy utilisé par les professionnels.
+            </p>
+            <div className="mt-3 text-xs text-geo-accent">Enrichissement prévu : stats ministère Intérieur + proximité commissariat/gendarmerie</div>
+          </div>
+        </div>
+      </Section>
+
+      {/* 13. COMMERCES & POI */}
+      <Section title="Commerces &amp; services de proximité" icon="🛒">
+        <p className="text-sm text-geo-text2 mb-4">
+          Couverture en équipements de proximité — source : Base Permanente des Équipements (INSEE).
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+          <div className="p-3 bg-geo-bg rounded-lg text-center">
+            <div className="text-2xl mb-1">🏥</div>
+            <ScoreRow label="Santé" value={Number(addr.bpe_score_sante) || 0} />
+            <div className="text-xs text-geo-text2 mt-1">Médecins, pharmacies, hôpitaux</div>
+          </div>
+          <div className="p-3 bg-geo-bg rounded-lg text-center">
+            <div className="text-2xl mb-1">🎓</div>
+            <ScoreRow label="Éducation" value={Number(addr.bpe_score_education) || 0} />
+            <div className="text-xs text-geo-text2 mt-1">Écoles, collèges, lycées</div>
+          </div>
+          <div className="p-3 bg-geo-bg rounded-lg text-center">
+            <div className="text-2xl mb-1">🛍️</div>
+            <ScoreRow label="Commerces" value={Number(addr.bpe_score_commerce) || 0} />
+            <div className="text-xs text-geo-text2 mt-1">Supermarchés, boulangeries</div>
+          </div>
+          <div className="p-3 bg-geo-bg rounded-lg text-center">
+            <div className="text-2xl mb-1">🚌</div>
+            <ScoreRow label="Transports" value={Number(addr.bpe_score_transport) || 0} />
+            <div className="text-xs text-geo-text2 mt-1">Bus, tram, gare</div>
+          </div>
+          <div className="p-3 bg-geo-bg rounded-lg text-center">
+            <div className="text-2xl mb-1">🎭</div>
+            <ScoreRow label="Loisirs" value={Number(addr.bpe_score_loisirs) || 0} />
+            <div className="text-xs text-geo-text2 mt-1">Cinémas, piscines, parcs</div>
+          </div>
+          <div className="p-3 bg-geo-bg rounded-lg text-center">
+            <div className="text-2xl mb-1">📊</div>
+            <div className="text-lg font-bold text-geo-accent">{addr.bpe_nb_equipements ?? "—"}</div>
+            <div className="text-xs text-geo-text2 mt-1">Équipements totaux</div>
+          </div>
+        </div>
+        <div className="text-xs text-geo-accent">Enrichissement prévu : noms et distances via OpenStreetMap Overpass</div>
+      </Section>
+
+      {/* 14. ACTUALITÉS LOCALES */}
+      <Section title={`Actualités — ${addr.nom_commune}`} icon="📰">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="text-sm font-semibold mb-3 text-geo-text2">Commune en bref</h3>
+            {addr.commune_wiki_summary && (
+              <p className="text-sm text-geo-text2 leading-relaxed mb-3">{addr.commune_wiki_summary}</p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <DataItem label="Population" value={formatNum(addr.commune_population)} context={addr.commune_evolution_pop ? `Évolution : ${Number(addr.commune_evolution_pop) > 0 ? "+" : ""}${addr.commune_evolution_pop}%` : undefined} />
+              <DataItem label="Entreprises" value={formatNum(addr.commune_nb_entreprises)} context="SIRENE" />
+            </div>
+          </div>
+          <div className="p-4 bg-geo-bg rounded-lg">
+            <h3 className="text-sm font-semibold mb-2 text-geo-text2">Fil d&apos;actualités</h3>
+            <p className="text-sm text-geo-text2 leading-relaxed">
+              Le module d&apos;actualités locales est en cours de développement. Il agrégera les flux RSS des mairies,
+              les publications de la communauté de communes et les articles de presse locale liés à {addr.nom_commune}.
+            </p>
+            <div className="mt-3 text-xs text-geo-accent">Enrichissement prévu : flux RSS mairie + Google News local</div>
+          </div>
+        </div>
+      </Section>
+
+      {/* 15. COMMUNE */}
       {addr.commune_wiki_summary && (
         <Section title={`À propos de ${addr.nom_commune}`} icon="🏘️">
           <p className="text-sm text-geo-text2 leading-relaxed">
