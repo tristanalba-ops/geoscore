@@ -27,6 +27,15 @@ export async function getAddressBySeo(
   return data[0];
 }
 
+// ─── Helper: parse scalar jsonb RPC result ───────────────────────
+function parseJsonbResult(data: any): any {
+  if (!data) return null;
+  if (typeof data === "string") {
+    try { return JSON.parse(data); } catch { return null; }
+  }
+  return data;
+}
+
 // ─── Commune (page ville) ─────────────────────────────────────────
 export async function getCommuneStats(cp: string, commune: string) {
   const communeDecoded = commune.replace(/-/g, " ");
@@ -34,8 +43,8 @@ export async function getCommuneStats(cp: string, commune: string) {
     p_cp: cp,
     p_commune: communeDecoded,
   });
-  if (error || !data) return null;
-  return data as any;
+  if (error) { console.error("[getCommuneStats] RPC error:", error.message); return null; }
+  return parseJsonbResult(data);
 }
 
 export async function getCommuneVoies(cp: string, commune: string, limit = 50) {
@@ -72,8 +81,8 @@ export async function getVoieStats(cp: string, commune: string, voie: string) {
     p_commune: communeDecoded,
     p_voie: voieDecoded,
   });
-  if (error || !data) return null;
-  return data as any;
+  if (error) { console.error("[getVoieStats] RPC error:", error.message); return null; }
+  return parseJsonbResult(data);
 }
 
 export async function getVoieAdresses(cp: string, commune: string, voie: string) {
