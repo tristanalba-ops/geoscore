@@ -257,44 +257,55 @@ export default async function VoiePage({ params }: Props) {
             {
               "@context": "https://schema.org",
               "@type": "Place",
+              "@id": `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}#place`,
               name: `${voieName}, ${params.cp} ${communeName}`,
-              geo: stats.latitude_centre
-                ? {
-                    "@type": "GeoCoordinates",
-                    latitude: stats.latitude_centre,
-                    longitude: stats.longitude_centre,
-                  }
-                : undefined,
+              description: `Analyse immobilière de ${voieName} à ${communeName} (${params.cp}) : ${stats.nb_adresses ?? ""} adresses, prix médian ${stats.prix_m2_median ? formatNum(stats.prix_m2_median) + " €/m²" : "N/A"}.`,
+              url: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}`,
+              geo: stats.latitude_centre ? {
+                "@type": "GeoCoordinates",
+                latitude: stats.latitude_centre,
+                longitude: stats.longitude_centre,
+              } : undefined,
               address: {
                 "@type": "PostalAddress",
                 streetAddress: voieName,
                 postalCode: params.cp,
                 addressLocality: communeName,
+                addressRegion: `Département ${codeDept}`,
                 addressCountry: "FR",
               },
+              containedInPlace: {
+                "@type": "City",
+                name: communeName,
+                url: `https://app.intentanalytics.fr/${params.cp}/${params.ville}`,
+              },
+              additionalProperty: [
+                stats.nb_adresses && { "@type": "PropertyValue", name: "Nombre d'adresses", value: stats.nb_adresses },
+                stats.prix_m2_median && { "@type": "PropertyValue", name: "Prix médian au m²", value: stats.prix_m2_median, unitCode: "EUR" },
+                stats.dpe_dominant && { "@type": "PropertyValue", name: "DPE dominant", value: stats.dpe_dominant },
+                stats.estimation_moyenne && { "@type": "PropertyValue", name: "Estimation moyenne", value: stats.estimation_moyenne, unitCode: "EUR" },
+              ].filter(Boolean),
             },
+            ...(adresses.length > 0 ? [{
+              "@context": "https://schema.org",
+              "@type": "ItemList",
+              name: `Adresses de ${voieName}, ${communeName}`,
+              numberOfItems: adresses.length,
+              itemListElement: adresses.slice(0, 15).map((a: any, i: number) => ({
+                "@type": "ListItem",
+                position: i + 1,
+                name: `${a.numero} ${voieName}, ${params.cp} ${communeName}`,
+                url: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}/${a.numero}`,
+              })),
+            }] : []),
             {
               "@context": "https://schema.org",
               "@type": "BreadcrumbList",
               itemListElement: [
-                {
-                  "@type": "ListItem",
-                  position: 1,
-                  name: "Accueil",
-                  item: "https://app.intentanalytics.fr",
-                },
-                {
-                  "@type": "ListItem",
-                  position: 2,
-                  name: `${villeName} (${params.cp})`,
-                  item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}`,
-                },
-                {
-                  "@type": "ListItem",
-                  position: 3,
-                  name: voieName,
-                  item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}`,
-                },
+                { "@type": "ListItem", position: 1, name: "Accueil", item: "https://app.intentanalytics.fr" },
+                { "@type": "ListItem", position: 2, name: `Département ${codeDept}`, item: `https://app.intentanalytics.fr/departement/${codeDept}` },
+                { "@type": "ListItem", position: 3, name: `${communeName} (${params.cp})`, item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}` },
+                { "@type": "ListItem", position: 4, name: voieName, item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}` },
               ],
             },
           ]),

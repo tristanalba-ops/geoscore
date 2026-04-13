@@ -93,6 +93,7 @@ export default async function AddressPage({ params }: Props) {
   const villeName = params.ville.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const voieName = params.voie.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const fullAddress = `${addr.numero} ${addr.nom_voie}, ${addr.code_postal} ${addr.nom_commune}`;
+  const codeDept = addr.code_departement || params.cp.substring(0, 2);
 
   const prixM2 = addr.dvf_prix_m2 ? Number(addr.dvf_prix_m2) : null;
   const prixM2Median = addr.dvf_prix_m2_median_iris ? Number(addr.dvf_prix_m2_median_iris) : null;
@@ -929,14 +930,17 @@ export default async function AddressPage({ params }: Props) {
           __html: JSON.stringify([
             {
               "@context": "https://schema.org",
-              "@type": "Place",
+              "@type": "Residence",
+              "@id": `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}#residence`,
               name: fullAddress,
+              description: `Fiche immobilière complète du ${fullAddress} : estimation${estimation ? ` ${formatNum(estimation)} €` : ""}, DPE ${dpeClasse || "N/A"}, risques, quartier.`,
+              url: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}`,
               address: {
                 "@type": "PostalAddress",
                 streetAddress: `${addr.numero} ${addr.nom_voie}`,
                 addressLocality: addr.nom_commune,
                 postalCode: addr.code_postal,
-                addressRegion: "Nouvelle-Aquitaine",
+                addressRegion: `Département ${codeDept}`,
                 addressCountry: "FR",
               },
               ...(addr.latitude && addr.longitude ? {
@@ -946,22 +950,59 @@ export default async function AddressPage({ params }: Props) {
                   longitude: addr.longitude,
                 },
               } : {}),
+              containedInPlace: {
+                "@type": "City",
+                name: addr.nom_commune,
+                url: `https://app.intentanalytics.fr/${params.cp}/${params.ville}`,
+              },
+              floorSize: addr.dvf_derniere_surface ? {
+                "@type": "QuantitativeValue",
+                value: addr.dvf_derniere_surface,
+                unitCode: "MTK",
+                unitText: "m²",
+              } : undefined,
               additionalProperty: [
-                estimation && { "@type": "PropertyValue", name: "Prix estimé", value: `${formatNum(estimation)} €` },
-                prixM2 && { "@type": "PropertyValue", name: "Prix au m²", value: `${formatNum(prixM2)} €/m²` },
-                dpeClasse && { "@type": "PropertyValue", name: "DPE", value: dpeClasse },
-                addr.dvf_derniere_surface && { "@type": "PropertyValue", name: "Surface", value: `${addr.dvf_derniere_surface} m²` },
-                addr.bpe_score_global && { "@type": "PropertyValue", name: "Score quartier", value: `${addr.bpe_score_global}/100` },
+                estimation && { "@type": "PropertyValue", name: "Prix estimé", value: estimation, unitCode: "EUR" },
+                prixM2 && { "@type": "PropertyValue", name: "Prix au m²", value: prixM2, unitCode: "EUR" },
+                dpeClasse && { "@type": "PropertyValue", name: "Classe DPE", value: dpeClasse, description: "Diagnostic de performance énergétique (A=performant, G=énergivore)" },
+                addr.dpe_conso && { "@type": "PropertyValue", name: "Consommation énergétique", value: addr.dpe_conso, unitCode: "KWH", unitText: "kWh/m²/an" },
+                addr.dvf_derniere_surface && { "@type": "PropertyValue", name: "Surface habitable", value: addr.dvf_derniere_surface, unitCode: "MTK" },
+                addr.bpe_score_global && { "@type": "PropertyValue", name: "Score équipements quartier", value: addr.bpe_score_global, maxValue: 100 },
+                addr.bpe_score_sante && { "@type": "PropertyValue", name: "Score santé", value: addr.bpe_score_sante, maxValue: 100 },
+                addr.bpe_score_education && { "@type": "PropertyValue", name: "Score éducation", value: addr.bpe_score_education, maxValue: 100 },
+                addr.bpe_score_commerce && { "@type": "PropertyValue", name: "Score commerces", value: addr.bpe_score_commerce, maxValue: 100 },
+                addr.bpe_score_transport && { "@type": "PropertyValue", name: "Score transports", value: addr.bpe_score_transport, maxValue: 100 },
+                addr.iris_revenu_median && { "@type": "PropertyValue", name: "Revenu médian IRIS", value: addr.iris_revenu_median, unitCode: "EUR" },
+                addr.dvf_dernier_prix && { "@type": "PropertyValue", name: "Dernière vente DVF", value: addr.dvf_dernier_prix, unitCode: "EUR" },
               ].filter(Boolean),
             },
+            ...(estimation ? [{
+              "@context": "https://schema.org",
+              "@type": "Observation",
+              about: { "@id": `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}#residence` },
+              measuredProperty: { "@type": "StatisticalVariable", name: "Estimation immobilière" },
+              measuredValue: estimation,
+              unitCode: "EUR",
+              observationDate: new Date().toISOString().split("T")[0],
+              observationAbout: {
+                "@type": "Place",
+                address: {
+                  "@type": "PostalAddress",
+                  postalCode: addr.code_postal,
+                  addressLocality: addr.nom_commune,
+                  addressCountry: "FR",
+                },
+              },
+            }] : []),
             {
               "@context": "https://schema.org",
               "@type": "BreadcrumbList",
               itemListElement: [
                 { "@type": "ListItem", position: 1, name: "Accueil", item: "https://app.intentanalytics.fr" },
-                { "@type": "ListItem", position: 2, name: villeName, item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}` },
-                { "@type": "ListItem", position: 3, name: voieName, item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}` },
-                { "@type": "ListItem", position: 4, name: `N°${params.numero}`, item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}` },
+                { "@type": "ListItem", position: 2, name: `Département ${codeDept}`, item: `https://app.intentanalytics.fr/departement/${codeDept}` },
+                { "@type": "ListItem", position: 3, name: villeName, item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}` },
+                { "@type": "ListItem", position: 4, name: voieName, item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}` },
+                { "@type": "ListItem", position: 5, name: `N°${params.numero}`, item: `https://app.intentanalytics.fr/${params.cp}/${params.ville}/${params.voie}/${params.numero}` },
               ],
             },
           ]),

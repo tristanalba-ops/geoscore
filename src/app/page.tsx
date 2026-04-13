@@ -269,58 +269,101 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            name: "Intent Analytics",
-            url: "https://app.intentanalytics.fr",
-            description:
-              "Intelligence territoriale : estimation, DPE, risques, équipements et démographie pour chaque adresse en France.",
-            potentialAction: {
-              "@type": "SearchAction",
-              target: {
-                "@type": "EntryPoint",
-                urlTemplate:
-                  "https://app.intentanalytics.fr/recherche?q={search_term_string}",
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "@id": "https://app.intentanalytics.fr/#website",
+              name: "Intent Analytics",
+              url: "https://app.intentanalytics.fr",
+              description: "Intelligence territoriale : estimation, DPE, risques, équipements et démographie pour chaque adresse en France.",
+              inLanguage: "fr-FR",
+              publisher: { "@id": "https://app.intentanalytics.fr/#organization" },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: "https://app.intentanalytics.fr/recherche?q={search_term_string}",
+                },
+                "query-input": "required name=search_term_string",
               },
-              "query-input": "required name=search_term_string",
             },
-          }),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            mainEntity: [
-              {
-                "@type": "Question",
-                name: "Comment est calculée l'estimation d'un bien ?",
-                acceptedAnswer: {
-                  "@type": "Answer",
-                  text: "Notre estimation croise les données DVF à l'échelle de l'IRIS avec le DPE, la surface, le type de bien et les caractéristiques du quartier.",
-                },
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "@id": "https://app.intentanalytics.fr/#organization",
+              name: "Intent Analytics",
+              url: "https://app.intentanalytics.fr",
+              description: "Plateforme d'intelligence territoriale immobilière open data pour la France.",
+              areaServed: { "@type": "Country", name: "France", sameAs: "https://www.wikidata.org/wiki/Q142" },
+              knowsAbout: [
+                "Estimation immobilière", "Diagnostic de performance énergétique",
+                "Risques naturels", "Données DVF", "Analyse territoriale",
+              ],
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "Dataset",
+              "@id": "https://app.intentanalytics.fr/#dataset",
+              name: "Intent Analytics — Données immobilières France",
+              description: `Base de données immobilières couvrant ${stats?.total_adresses?.toLocaleString("fr-FR") ?? ""} adresses dans ${stats?.nb_communes ?? ""} communes et ${stats?.nb_departements ?? ""} départements français. Sources : DVF, DPE ADEME, INSEE, Géorisques, BPE, BAN.`,
+              url: "https://app.intentanalytics.fr/donnees",
+              license: "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+              isAccessibleForFree: true,
+              inLanguage: "fr-FR",
+              spatialCoverage: { "@type": "Country", name: "France" },
+              creator: { "@id": "https://app.intentanalytics.fr/#organization" },
+              distribution: {
+                "@type": "DataDownload",
+                encodingFormat: "application/json",
+                contentUrl: "https://app.intentanalytics.fr/api",
               },
-              {
-                "@type": "Question",
-                name: "D'où viennent les données sur les risques naturels ?",
-                acceptedAnswer: {
-                  "@type": "Answer",
-                  text: "Les données proviennent de Géorisques (BRGM) et incluent les risques d'inondation, le retrait-gonflement des argiles, la zone sismique et l'historique des arrêtés CatNat.",
-                },
+              variableMeasured: [
+                { "@type": "PropertyValue", name: "Prix au m²", unitCode: "EUR" },
+                { "@type": "PropertyValue", name: "Classe DPE", description: "Diagnostic de performance énergétique A-G" },
+                { "@type": "PropertyValue", name: "Score équipements BPE", unitCode: "P1", description: "Score 0-100" },
+                { "@type": "PropertyValue", name: "Population", description: "Population communale INSEE" },
+              ],
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "CollectionPage",
+              "@id": "https://app.intentanalytics.fr/#collectionpage",
+              name: "Annuaire des départements — Intent Analytics",
+              url: "https://app.intentanalytics.fr",
+              isPartOf: { "@id": "https://app.intentanalytics.fr/#website" },
+              about: { "@id": "https://app.intentanalytics.fr/#dataset" },
+              mainEntity: {
+                "@type": "ItemList",
+                name: "Départements couverts",
+                numberOfItems: departements.length,
+                itemListElement: departements.slice(0, 30).map((d: any, i: number) => ({
+                  "@type": "ListItem",
+                  position: i + 1,
+                  name: `Département ${d.code_departement}${d.nom_departement ? ` — ${d.nom_departement}` : ""}`,
+                  url: `https://app.intentanalytics.fr/departement/${d.code_departement}`,
+                })),
               },
-              {
-                "@type": "Question",
-                name: "Les données sont-elles fiables ?",
-                acceptedAnswer: {
-                  "@type": "Answer",
-                  text: "Toutes les données proviennent de sources officielles : data.gouv.fr, INSEE, ADEME, DVF, Géorisques et la Base Permanente des Équipements.",
+            },
+            {
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: [
+                {
+                  "@type": "Question", name: "Comment est calculée l'estimation d'un bien ?",
+                  acceptedAnswer: { "@type": "Answer", text: "Notre estimation croise les données DVF à l'échelle de l'IRIS avec le DPE, la surface, le type de bien et les caractéristiques du quartier." },
                 },
-              },
-            ],
-          }),
+                {
+                  "@type": "Question", name: "D'où viennent les données sur les risques naturels ?",
+                  acceptedAnswer: { "@type": "Answer", text: "Les données proviennent de Géorisques (BRGM) et incluent les risques d'inondation, le retrait-gonflement des argiles, la zone sismique et l'historique des arrêtés CatNat." },
+                },
+                {
+                  "@type": "Question", name: "Les données sont-elles fiables ?",
+                  acceptedAnswer: { "@type": "Answer", text: "Toutes les données proviennent de sources officielles : data.gouv.fr, INSEE, ADEME, DVF, Géorisques et la Base Permanente des Équipements." },
+                },
+              ],
+            },
+          ]),
         }}
       />
     </div>
